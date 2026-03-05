@@ -1,0 +1,28 @@
+name: Mirror main-branch to Bitbucket 
+
+on:
+  push:
+    branches: ["main"]
+    tags: ["*"]
+  workflow_dispatch:
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - name: Push main branch via repository access token
+        env:
+           BB_URL: ${{ secrets.BB_REPO_URL }}
+           BB_TOKEN: ${{ secrets.BB_REPO_TOKEN }}
+        run: |
+           AUTH_URL="https://x-token-auth:${BB_TOKEN}@${BB_URL#https://}"
+           if git remote get-url bitbucket >/dev/null 2>&1; then
+              git remote set-url bitbucket "$AUTH_URL"
+           else
+              git remote add bitbucket "$AUTH_URL"
+           fi
+           git push bitbucket main --force
+           git push bitbucket --tags
